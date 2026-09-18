@@ -1,4 +1,11 @@
 
+//! Provides utilities for bidirectional support between Rust and
+//! GDScript for `async` and `await`.
+//!
+//! This crate provides two macros, both intended for interoperability
+//! with GDScript: [`godot_async`] and [`godot_await`]. If you are
+//! writing a pure-Rust project, you probably do NOT need this crate.
+
 use godot::prelude::*;
 
 use std::cell::OnceCell;
@@ -79,6 +86,51 @@ fn to_gdscript_function_state(variant: &Variant) -> Option<Gd<Object>> {
 
 /// Convert a block of Rust async code into a Godot task whose
 /// completion can safely be awaited from GDScript.
+///
+/// This macro returns a `Variant` which can be awaited on the
+/// GDScript side. If this macro is the entire function body, your
+/// function must return `Variant`.
+///
+/// It is strongly recommended that functions which use this macro
+/// take `this: Gd<Self>` via `#[func(gd_self)]` in order to avoid
+/// holding a `Gd` binding across an `await` point.
+///
+/// # Example Usage
+///
+/// ```rust
+/// # use godot::prelude::*;
+/// # use gdext_async::godot_async;
+///
+/// #[derive(GodotClass)]
+/// #[class(init, base=Node)]
+/// struct MyRustNode {}
+///
+/// // Rust
+/// #[godot_api]
+/// impl MyRustNode {
+///   #[func(gd_self)]
+///   pub fn wait_three_secs(this: Gd<Self>) -> Variant {
+///     godot_async! {
+///       godot_print!("Before Timer! (2)");
+///       let timer = this.get_tree().create_timer(3.0);
+///       timer.signals().timeout().to_future().await;
+///       godot_print!("After Timer! (3)");
+///     }
+///   }
+/// }
+/// ```
+///
+/// ```py
+/// # GDScript
+/// extends Node
+///
+/// func _ready():
+///     var node = MyRustNode.new()
+///     add_child(node)
+///     print("Before Timer! (1)")
+///     await node.wait_three_secs()
+///     print("After Timer! (4)")
+/// ```
 #[macro_export]
 macro_rules! godot_async {
   ($($block: tt)+) => {
