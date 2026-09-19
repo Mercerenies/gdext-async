@@ -1,7 +1,13 @@
 [package]
 name = "gdext-async"
 version = "0.1.0"
+authors = ["Silvio Mayolo"]
 edition = "2024"
+description = "Async utilities for inter-operating between Rust and GDScript code"
+repository = "https://github.com/Mercerenies/gdext-async"
+license = "MIT"
+keywords = ["gamedev", "godot", "engine", "async"]
+categories = ["game-development", "asynchronous"]
 
 [dependencies]
 godot = { version = "0.5.5" }
