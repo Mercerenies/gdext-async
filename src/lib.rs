@@ -4,7 +4,8 @@
 //!
 //! This crate provides two macros, both intended for interoperability
 //! with GDScript: [`godot_async`] and [`godot_await`]. If you are
-//! writing a pure-Rust project, you probably do NOT need this crate.
+//! writing a pure-Rust project that does not need to inter-operate
+//! with GDScript, then you probably do NOT need this crate.
 
 use godot::prelude::*;
 
@@ -56,10 +57,15 @@ impl AsyncAwaitableTask {
   pub fn completed(result: Variant);
 }
 
-/// If the object is a GDScriptFunctionState, await it. If not, return
-/// it unmodified. Note that, unlike GDScript, this function does NOT
-/// attempt to detect and await signals. Only actual
-/// GDScriptFunctionState objects will be awaited.
+/// If the object is a `GDScriptFunctionState`, await it. If not,
+/// return it unmodified. Note that, unlike GDScript, this function
+/// does NOT attempt to detect and await signals. Only actual
+/// `GDScriptFunctionState` objects will be awaited.
+///
+/// This is the function used under-the-hood by the [`godot_await!`]
+/// macro, but it can also be used independently, for instance, if you
+/// need to store the future (as a [`Future`]) and not evaluate it
+/// yet.
 pub async fn resolve_gdscript_coroutine(variant: Variant) -> Variant {
   // This function is adapted from
   // [https://github.com/godot-rust/gdext/pull/1645/changes] and uses
@@ -92,20 +98,21 @@ fn to_gdscript_function_state(variant: &Variant) -> Option<Gd<Object>> {
 /// function must return `Variant`.
 ///
 /// It is strongly recommended that functions which use this macro
-/// take `this: Gd<Self>` via `#[func(gd_self)]` in order to avoid
-/// holding a `Gd` binding across an `await` point.
+/// take `this: Gd<Self>` via `#[func(gd_self)]` (as opposed to
+/// `&self` or `&mut self`) in order to avoid holding a `Gd` binding
+/// across an `await` point.
 ///
 /// # Example Usage
 ///
 /// ```rust
 /// # use godot::prelude::*;
 /// # use gdext_async::godot_async;
+/// // Rust
 ///
 /// #[derive(GodotClass)]
 /// #[class(init, base=Node)]
 /// struct MyRustNode {}
 ///
-/// // Rust
 /// #[godot_api]
 /// impl MyRustNode {
 ///   #[func(gd_self)]
@@ -120,7 +127,7 @@ fn to_gdscript_function_state(variant: &Variant) -> Option<Gd<Object>> {
 /// }
 /// ```
 ///
-/// ```py
+/// ```gdscript
 /// # GDScript
 /// extends Node
 ///
@@ -141,9 +148,37 @@ macro_rules! godot_async {
 }
 
 /// Await (in Rust) a Godot value, using semantics similar to
-/// GDScript's `await`. GDScript function state objects will be
-/// awaited, while any other value (**including signals**) will be
-/// returned verbatim.
+/// GDScript's `await`.
+///
+/// GDScript function state objects will be awaited, while any other
+/// value (**including signals**) will be returned verbatim.
+///
+/// # Example Usage
+///
+/// ```rust
+/// # use godot::prelude::*;
+/// # use gdext_async::godot_await;
+/// // Rust
+///
+/// // Note: Ordinary Rust async function, NOT exposed to GDScript.
+/// pub async fn fade_out_enemy(mut enemy_node: Gd<Node2D>) {
+///   godot_print!("Freeing enemy node ...");
+///   godot_await! { enemy_node.call("fade_out", &[]) };
+///   godot_print!("Enemy node freed.");
+/// }
+///
+/// ```
+///
+/// ```gdscript
+/// # GDScript
+/// extends Node2D
+///
+/// func fade_out():
+///     var tween = create_tween()
+///     tween.tween_property(self, "modulate:a", 0.0, 1.0)
+///     await tween.finished
+///     queue_free()
+/// ```
 #[macro_export]
 macro_rules! godot_await {
   ($($block: tt)+) => {
