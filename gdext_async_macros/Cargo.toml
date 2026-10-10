@@ -1,0 +1,12 @@
+[package]
+name = "gdext_async_macros"
+version = "0.1.1"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1.0.107"

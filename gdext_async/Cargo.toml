@@ -1,0 +1,19 @@
+[package]
+name = "gdext-async"
+version = "0.1.1"
+authors = ["Silvio Mayolo"]
+edition = "2024"
+description = "Async utilities for inter-operating between Rust and GDScript code"
+repository = "https://github.com/Mercerenies/gdext-async"
+license = "MIT"
+keywords = ["gamedev", "godot", "engine", "async"]
+categories = ["game-development", "asynchronous"]
+
+[dependencies]
+godot = { version = "0.5.5" }
+gdext_async_macros = { version = "0.1.1", optional = true, path = "../gdext_async_macros" }
+
+[features]
+default = ["macros"]
+
+macros = ["gdext_async_macros"]

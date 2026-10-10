@@ -185,3 +185,7 @@ macro_rules! godot_await {
     $crate::resolve_gdscript_coroutine({ $($block)+ }).await
   }
 }
+
+#[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+pub use gdext_async_macros::async_func;
