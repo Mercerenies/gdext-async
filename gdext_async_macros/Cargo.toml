@@ -1,7 +1,11 @@
 [package]
 name = "gdext_async_macros"
 version = "0.1.1"
+authors = ["Silvio Mayolo"]
 edition = "2024"
+description = "proc-macro crate for gdext_async, should not be used directly"
+repository = "https://github.com/Mercerenies/gdext-async"
+license = "MIT"
 
 [lib]
 proc-macro = true
