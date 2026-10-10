@@ -6,6 +6,11 @@
 //! with GDScript: [`godot_async`] and [`godot_await`]. If you are
 //! writing a pure-Rust project that does not need to inter-operate
 //! with GDScript, then you probably do NOT need this crate.
+//!
+//! # Features
+//!
+//! * `macros` - Exposes the attribute macro `#[gdext_async]`. Enabled
+//! by default. This requires the `syn` crate as a dependency.
 
 use godot::prelude::*;
 
@@ -186,6 +191,68 @@ macro_rules! godot_await {
   }
 }
 
+/// Attribute macro that can be applied to `impl` blocks (similar to
+/// [`godot_api`]) to enable optional functionality.
+///
+/// This macro can only be applied to an inherent impl block, not to a
+/// trait impl. This macro generates `#[godot_api(secondary)]` blocks,
+/// so the relevant struct must have a primary (i.e. non-`secondary`)
+/// `#[godot_api]` block.
+///
+/// ## Async Functions (`#[async_func]` / `#[async_func(gd_self)]`)
+///
+/// A function in a `gdext_async`-enabled impl block which is tagged
+/// with `#[async_func]` will be exported to Godot, similar to
+/// `#[func]` on `#[godot_api]`. The exported Godot-side function will
+/// be `await`-able in GDScript.
+///
+/// The annotated function must be `async` and its arguments and
+/// return type must be Godot-compatible. That is, arguments must be
+/// [`AsArg`](godot::meta::AsArg) and the result type must be
+/// [`ToGodot`]. Note that this is a stronger guarantee than
+/// `#[func]`, as it is not currently possible to return, for example,
+/// `Result<T, E>` from a `#[async_func]` since the type does not
+/// implement `ToGodot`.
+///
+/// `#[async_func]` can be called as `#[async_func(gd_self)]`, which
+/// causes the generated GDScript-function to accept `Gd<Self>` rather
+/// than an explicit `&self` or `&mut self`. If you are accepting a
+/// `self` argument, you almost always want `gd_self`, as holding a
+/// `Gd` binding across an `await` point is generally a very bad idea.
+///
+/// The function will be available both from Rust and from GDScript
+/// and can be awaited using the respective `await` keyword in each
+/// language.
+///
+/// `#[rpc]` functions are NOT currently supported by this macro.
+///
+/// ### Example
+///
+/// ```
+/// # use godot::prelude::*;
+/// # use gdext_async_macros::gdext_async;
+///
+/// #[derive(GodotClass)]
+/// #[class(init, base=Node2D)]
+/// pub struct Player {}
+///
+/// #[gdext_async]
+/// #[godot_api]
+/// impl Player {
+///   #[async_func(gd_self)]
+///   pub async fn play_item_get_animation(this: Gd<Self>, item_id: i32) -> i32 {
+///     // Function body ...
+///     unimplemented!()
+///   }
+///
+///   // Also works with static functions
+///   #[async_func]
+///   pub async fn calculate_item_damage(item_id: i32) -> f32 {
+///     unimplemented!()
+///   }
+/// }
+/// ```
+#[doc(alias = "async_func")]
 #[cfg(feature = "macros")]
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 pub use gdext_async_macros::gdext_async;

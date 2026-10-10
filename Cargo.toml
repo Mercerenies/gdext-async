@@ -4,3 +4,6 @@ members = [
     "gdext_async",
     "gdext_async_macros",
 ]
+
+[workspace.dependencies]
+godot = { version = "0.5.5" }
