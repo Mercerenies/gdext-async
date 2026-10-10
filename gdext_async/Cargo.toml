@@ -1,6 +1,6 @@
 [package]
 name = "gdext-async"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Silvio Mayolo"]
 edition = "2024"
 description = "Async utilities for inter-operating between Rust and GDScript code"

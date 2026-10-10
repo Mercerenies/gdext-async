@@ -254,5 +254,4 @@ macro_rules! godot_await {
 /// ```
 #[doc(alias = "async_func")]
 #[cfg(feature = "macros")]
-#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
 pub use gdext_async_macros::gdext_async;

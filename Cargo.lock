@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "gdext-async"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "gdext_async_macros",
  "godot",
@@ -12,7 +12,7 @@ dependencies = [
 
 [[package]]
 name = "gdext_async_macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "proc-macro2",
  "quote",
