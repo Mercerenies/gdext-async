@@ -2,10 +2,10 @@
 //! Provides utilities for bidirectional support between Rust and
 //! GDScript for `async` and `await`.
 //!
-//! This crate provides two macros, both intended for interoperability
-//! with GDScript: [`godot_async`] and [`godot_await`]. If you are
-//! writing a pure-Rust project that does not need to inter-operate
-//! with GDScript, then you probably do NOT need this crate.
+//! This crate provides macros intended for interoperability with
+//! GDScript. If you are writing a pure-Rust project that does not
+//! need to inter-operate with GDScript, then you probably do NOT need
+//! this crate.
 //!
 //! # Features
 //!
@@ -108,8 +108,8 @@ fn to_gdscript_function_state(variant: &Variant) -> Option<Gd<Object>> {
 /// completion can safely be awaited from GDScript.
 ///
 /// This macro returns a `Variant` which can be awaited on the
-/// GDScript side. If this macro is the entire function body, your
-/// function must return `Variant`.
+/// GDScript side. See also `#[async_func]` (in [`gdext_async`]), if
+/// your entire function should be considered `async` from GDScript.
 ///
 /// It is strongly recommended that functions which use this macro
 /// take `this: Gd<Self>` via `#[func(gd_self)]` (as opposed to
@@ -221,11 +221,14 @@ macro_rules! godot_await {
 ///
 /// The annotated function must be `async` and its arguments and
 /// return type must be Godot-compatible. That is, arguments must be
-/// [`AsArg`](godot::meta::AsArg) and the result type must be
-/// [`ToGodot`]. Note that this is a stronger guarantee than
-/// `#[func]`, as it is not currently possible to return, for example,
-/// `Result<T, E>` from a `#[async_func]` since the type does not
-/// implement `ToGodot`.
+/// [`AsArg`](godot::meta::AsArg) and the result type must either be
+/// [`ToGodot`] or must be `Result<T, E>` with `T: ToGodot` and `E:
+/// ErrorToGodot`.
+///
+/// If the function returns a `Result` and the result value is a call
+/// failure (per [`ErrorToGodot`](godot::meta::error::ErrorToGodot)), then the error message will be
+/// printed to the Godot console, and anyone awaiting the function
+/// will receive `null` (i.e. [`Variant::nil()`]) as a result.
 ///
 /// `#[async_func]` can be called as `#[async_func(gd_self)]`, which
 /// causes the generated GDScript-function to accept `Gd<Self>` rather
