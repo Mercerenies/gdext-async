@@ -12,6 +12,9 @@
 //! * `macros` - Exposes the attribute macro `#[gdext_async]`. Enabled
 //! by default. This requires the `syn` crate as a dependency.
 
+#[doc(hidden)] // Only public for use in macro.
+pub mod conv;
+
 use godot::prelude::*;
 
 use std::cell::OnceCell;
@@ -27,8 +30,7 @@ pub struct AsyncAwaitableTask {
 
 impl AsyncAwaitableTask {
   pub fn create<F>(future: F) -> Gd<Self>
-  where F: IntoFuture + 'static,
-        <F as IntoFuture>::Output: ToGodot {
+  where F: IntoFuture<Output = Result<Variant, String>> + 'static {
     let known_result = Rc::new(OnceCell::new());
     let inst = Gd::from_init_fn(|base| {
       AsyncAwaitableTask { base, known_result: Rc::clone(&known_result) }
@@ -37,9 +39,16 @@ impl AsyncAwaitableTask {
       let inst = inst.clone(); // RefCounted: Cheap clone
       let _task_handle = godot::task::spawn(async move {
         let res = future.into_future().await;
-        known_result.set(res.to_variant())
+        let res = match res {
+          Ok(v) => v,
+          Err(err) => {
+            godot_error!("{err}");
+            Variant::nil()
+          }
+        };
+        known_result.set(res.clone())
           .expect("known_result was set twice!");
-        inst.signals().completed().emit(&res.to_variant());
+        inst.signals().completed().emit(&res);
       });
     }
     inst
@@ -147,7 +156,11 @@ fn to_gdscript_function_state(variant: &Variant) -> Option<Gd<Object>> {
 macro_rules! godot_async {
   ($($block: tt)+) => {
     $crate::AsyncAwaitableTask::create(async move {
-      $($block)+
+      let result_raw = { $($block)+ };
+      // Magic trick to make `T` (where `T: ToGodot`) work, but also
+      // `Result<T, E>` where `T: ToGodot` and `E: ErrorToGodot`.
+      use $crate::conv::AsyncToGodot;
+      $crate::conv::AsyncToGodotWrapper(result_raw).async_to_godot_impl()
     }).bind_mut().get_maybe_awaitable_value()
   }
 }
