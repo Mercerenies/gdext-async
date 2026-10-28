@@ -1,6 +1,6 @@
 [package]
 name = "gdext_async_macros"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Silvio Mayolo"]
 edition = "2024"
 description = "proc-macro crate for gdext_async, should not be used directly"

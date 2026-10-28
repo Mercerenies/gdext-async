@@ -156,7 +156,9 @@ fn to_gdscript_function_state(variant: &Variant) -> Option<Gd<Object>> {
 macro_rules! godot_async {
   ($($block: tt)+) => {
     $crate::AsyncAwaitableTask::create(async move {
-      let result_raw = { $($block)+ };
+      // Enclose the block in an additional async IIFE, so we can use
+      // `return` statements inside of it.
+      let result_raw = (async move || { $($block)+ })().await;
       // Magic trick to make `T` (where `T: ToGodot`) work, but also
       // `Result<T, E>` where `T: ToGodot` and `E: ErrorToGodot`.
       use $crate::conv::AsyncToGodot;
