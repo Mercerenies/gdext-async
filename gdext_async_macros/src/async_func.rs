@@ -53,6 +53,25 @@ fn remove_async_func_meta_attr(func: &mut syn::ImplItem) {
   func.attrs.remove(matching_index);
 }
 
+fn remove_known_godot_arg_attrs(func: &mut syn::ImplItem) {
+  fn is_known_godot_attr(attr: &syn::Attribute) -> bool {
+    let path = attr.path();
+    if path.segments.is_empty() {
+      return false;
+    }
+    path.segments[0].ident == "opt"
+  }
+
+  let syn::ImplItem::Fn(func) = func else { return; };
+  for arg in &mut func.sig.inputs {
+    let attrs = match arg {
+      syn::FnArg::Receiver(recv) => &mut recv.attrs,
+      syn::FnArg::Typed(pat) => &mut pat.attrs,
+    };
+    attrs.retain(|attr| !is_known_godot_attr(attr));
+  }
+}
+
 pub(crate) fn compile_gdext_async(mut input: syn::ItemImpl) -> Result<TokenStream, syn::Error> {
   let self_ty = input.self_ty.clone();
 
@@ -72,6 +91,7 @@ pub(crate) fn compile_gdext_async(mut input: syn::ItemImpl) -> Result<TokenStrea
   // Remove our attributes from the input.
   for item in &mut input.items {
     remove_async_func_meta_attr(item);
+    remove_known_godot_arg_attrs(item);
   }
 
   Ok(quote! {
