@@ -53,15 +53,15 @@ fn remove_async_func_meta_attr(func: &mut syn::ImplItem) {
   func.attrs.remove(matching_index);
 }
 
-fn remove_known_godot_arg_attrs(func: &mut syn::ImplItem) {
-  fn is_known_godot_attr(attr: &syn::Attribute) -> bool {
-    let path = attr.path();
-    if path.segments.is_empty() {
-      return false;
-    }
-    path.segments[0].ident == "opt"
+fn is_known_godot_attr(attr: &syn::Attribute) -> bool {
+  let path = attr.path();
+  if path.segments.is_empty() {
+    return false;
   }
+  path.segments[0].ident == "opt"
+}
 
+fn remove_known_godot_arg_attrs(func: &mut syn::ImplItem) {
   let syn::ImplItem::Fn(func) = func else { return; };
   for arg in &mut func.sig.inputs {
     let attrs = match arg {
@@ -131,7 +131,14 @@ fn compile_delegating_function(meta: &AsyncFuncAttr, original_func: &syn::ImplIt
         return Err(syn::Error::new_spanned(arg_data, "`self` argument not allowed in `#[async_func(gd_self)]`"));
       };
       let ty = arg_data.ty.clone();
-      Ok(quote! { #arg_name: #ty })
+      let attrs: Vec<_> = arg_data.attrs.iter()
+        .filter(|x| is_known_godot_attr(x))
+        .cloned()
+        .collect();
+      Ok(quote! {
+        #(#attrs)*
+        #arg_name: #ty
+      })
     })
     .collect::<Result<Vec<_>, _>>()?;
 
